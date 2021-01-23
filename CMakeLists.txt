@@ -13,13 +13,7 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/cnjinhao/nana
   GIT_TAG        v1.7.4
 )
-
-FetchContent_Declare(
-  sqlitecpp
-  GIT_REPOSITORY https://github.com/SRombauts/SQLiteCpp.git
-  GIT_TAG        3.1.1
-)
-FetchContent_MakeAvailable(sqlitecpp nana)
+FetchContent_MakeAvailable(nana)
 
 add_executable(nanaide WIN32 main.cpp)
-target_link_libraries(nanaide nana SQLiteCpp sqlite3)
+target_link_libraries(nanaide nana)
