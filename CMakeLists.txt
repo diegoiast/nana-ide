@@ -8,6 +8,11 @@ conan_basic_setup()
  
 # these libs are not (yet?) available in conan, so we have them as a local dependency
 # lets try and use conan as much as posible
+
+add_compile_definitions(NANA_ENABLE_PNG NANA_ENABLE_JPEG)
+if (UNIX)
+    add_compile_definitions(USE_LIBJPEG_FROM_OS  USE_LIBPNG_FROM_OS)
+endif (UNIX)
 FetchContent_Declare(
   nana
   GIT_REPOSITORY https://github.com/cnjinhao/nana
@@ -15,5 +20,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(nana)
 
+
 add_executable(nanaide WIN32 main.cpp)
-target_link_libraries(nanaide nana)
+target_link_libraries(nanaide nana turbojpeg png z)

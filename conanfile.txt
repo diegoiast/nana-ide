@@ -2,8 +2,8 @@
 #; https://docs.conan.io/en/latest/getting_started.html#getting-started
 
 [requires]
-mailio/0.20.0
 libpng/1.6.37
+libjpeg-turbo/2.0.6
 
 [generators]
 cmake
