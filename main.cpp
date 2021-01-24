@@ -1,4 +1,3 @@
-#include <iostream>
 #include <nana/gui.hpp>
 #include <nana/gui/place.hpp>
 #include <nana/gui/widgets/button.hpp>
@@ -8,9 +7,15 @@
 #include <nana/gui/widgets/panel.hpp>
 #include <nana/gui/widgets/tabbar.hpp>
 #include <nana/gui/widgets/toolbar.hpp>
+#include <nana/gui/filebox.hpp>
 #include <nana/threads/pool.hpp>
+#include <nana/filesystem/filesystem.hpp>
+#include <nana/filesystem/filesystem_ext.hpp>
 
+#include <iostream>
+#include <cstdio>
 #include <memory>
+#include <string>
 #include <vector>
 #include <map>
 #include <functional>
@@ -31,6 +36,35 @@ public:
                 editor.set_highlight("C++ types", nana::colors::burly_wood, nana::colors::white);
                 editor.set_keywords("C++ types", false, true, { "int", "void", "NULL"});
                 editor.borderless(true);
+        }
+};
+
+
+class project_model {
+        std::vector<std::filesystem::path> files;
+        std::string base_dir;
+public:
+        void clear() {
+                base_dir.clear();
+                files.clear();
+        }
+        void load_dir(const std::string &dir_name) {
+                base_dir = dir_name;
+                try {
+                        for (const auto& dir : std::filesystem::recursive_directory_iterator{ dir_name }) {
+                                files.push_back(dir.path());
+                        }
+                } catch (...) {
+                }
+        }
+
+        void setup_listbox(nana::listbox &lsbox)
+        {
+                lsbox.clear();
+                for (auto &s: files) {
+                        auto relative = std::filesystem::relative(s.parent_path(), base_dir);
+                        lsbox.at(0).append({ s.filename(), relative != "." ? relative : ""});
+                }
         }
 };
 
@@ -67,8 +101,6 @@ int main() {
         nana::listbox lsbox(fm);
         lsbox.append_header("filename");
         lsbox.append_header("size");
-        lsbox.at(0).append({ "nana-hello.cpp", "10k" });
-        lsbox.at(0).append({ "CMakeLists.txt", "879 bytes" });
 
         tab_page_editor editor1(fm);
         tab_page_editor editor2(fm);
@@ -88,9 +120,18 @@ int main() {
         nana::button buttonOpen{fm, "Open"};
         nana::button buttonCompile{fm, "Compile"};
         nana::button buttonRun{fm, "Run"};
+        project_model project;
 
-        buttonOpen.events().click([](){
-        });
+        buttonOpen.events().click(nana::threads::pool_push(thread_pool, [&lsbox, &project]{
+                // Seems like nana 1.7.4 does not support changing the folderbox title
+                nana::folderbox picker{nullptr, {}, "Choose project directory"};
+                picker.title("Choose project directory");
+                auto path = picker.show();
+                project.clear();
+                project.load_dir(path.front().string());
+                project.setup_listbox(lsbox);
+
+        }));
         buttonCompile.events().click(nana::threads::pool_push(thread_pool, [&lbl, &buttonCompile, &fm]{
                 buttonCompile.enabled(false);
                 buttonCompile.caption("Compiling...");
