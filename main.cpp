@@ -12,6 +12,7 @@
 #include <nana/filesystem/filesystem.hpp>
 #include <nana/filesystem/filesystem_ext.hpp>
 
+#define TOML11_COLORIZE_ERROR_MESSAGE
 #include <toml.hpp>
 
 #include <iostream>
@@ -42,6 +43,41 @@ public:
         }
 };
 
+namespace std {
+namespace filesystem {
+        std::filesystem::path config_unix_file(std::string name)
+        {
+                const char *xdg_home = getenv("XDG_CONFIG_HOME");
+                if (xdg_home != nullptr) {
+                        path file_name = path(xdg_home);
+                        file_name.replace_filename(name);
+                        return file_name;
+                }
+                const char *unix_home = getenv("HOME");
+                if (unix_home != nullptr) {
+                        path file_name = path(unix_home);
+                        file_name.append(name);
+                        return file_name;
+                }
+                path file_name = std::filesystem::temp_directory_path();
+                file_name.append(name);
+                return file_name;
+        }
+
+        std::filesystem::path config_windows_file(std::string name)
+        {
+                // TODO: take ideas from https://github.com/radekp/qt/blob/master/src/corelib/io/qfsfileengine_win.cpp
+                return "c:\\users\\defualt\\";
+        }
+
+
+        std::filesystem::path config_file(std::string name)
+        {
+                // TODO - windows?
+                return std::filesystem::config_unix_file(name);
+        }
+}
+}
 
 class project_model {
         std::vector<std::filesystem::path> files;
@@ -64,10 +100,12 @@ public:
         void setup_listbox(nana::listbox &lsbox)
         {
                 lsbox.clear();
+                lsbox.auto_draw(false);
                 for (auto &s: files) {
                         auto relative = std::filesystem::relative(s.parent_path(), base_dir);
                         lsbox.at(0).append({ s.filename(), relative != "." ? relative : ""});
                 }
+                lsbox.auto_draw(true);
         }
 
         std::optional<std::filesystem::path> get_file(size_t index)
@@ -103,6 +141,9 @@ int exec(const char* cmd, std::function<void(const char*)> on_line_read) {
 }
 #endif
 
+auto nana_ide_config_file_name = ".nanaiderc";
+std::filesystem::path nana_ide_config_file;
+
 int main() {
         nana::threads::pool thread_pool;
         nana::form fm{};
@@ -115,8 +156,11 @@ int main() {
         nana::button buttonCompile{fm, "Compile"};
         nana::button buttonRun{fm, "Run"};
 
+        // https://www.reddit.com/r/cpp/comments/f70io2/toml_a_toml_parser_and_serializer_for_c17/
         toml::value config;
         project_model project;
+
+        nana_ide_config_file = std::filesystem::config_file(nana_ide_config_file_name);
 
         lsbox.append_header("filename");
         lsbox.append_header("size");
@@ -137,7 +181,7 @@ int main() {
         tb.append("Compile");
         tb.append("run");
 
-        buttonOpen.events().click(nana::threads::pool_push(thread_pool, [&lsbox, &project]{
+        buttonOpen.events().click(nana::threads::pool_push(thread_pool, [&lsbox, &project, &config]{
                 // Seems like nana 1.7.4 does not support changing the folderbox title
                 nana::folderbox picker{nullptr, {}, "Choose project directory"};
                 picker.title("Choose project directory");
@@ -145,8 +189,18 @@ int main() {
                 project.clear();
                 project.load_dir(path.front().string());
                 project.setup_listbox(lsbox);
-                // TODO: save last project from config
 
+                try {
+                        std::string s = path.front();
+                        toml::value v(s);
+                        config["environment"]["loaded_dir"] = v;
+
+                        std::ofstream config_file (nana_ide_config_file);
+                        config_file << config;
+                        config_file.close();
+                } catch (const std::exception& e) {
+                        std::cerr << e.what() << std::endl;
+                }
         }));
         buttonCompile.events().click(nana::threads::pool_push(thread_pool, [&lbl, &buttonCompile, &fm]{
                 buttonCompile.enabled(false);
@@ -172,18 +226,23 @@ int main() {
         plc.collocate();
 
         try {
-                config = toml::parse("~/.naniderc");
-        } catch (const std::exception&) {
-
+                config = toml::parse<toml::preserve_comments>(nana_ide_config_file);
+                const std::string loaded_dir = toml::find<std::string>(config, "environment", "loaded_dir");
+                if (!loaded_dir.empty()) {
+                        project.clear();
+                        project.load_dir(loaded_dir);
+                        project.setup_listbox(lsbox);
+                } else {
+                        // TODO: hacks to see something on screen
+                        tab_page_editor editor1(fm);
+                        tab_page_editor editor2(fm);
+                        tabs.append("main.cpp", editor1);
+                        tabs.append("CMakeLists.txt", editor2);
+                        plc["tab_frame"].fasten(editor1).fasten(editor2);
+                }
+        } catch (const std::exception& e) {
+                std::cerr << e.what() << std::endl;
         }
-
-        // TODO: hacks to see something on screen
-        // TODO: load last project from config
-        tab_page_editor editor1(fm);
-        tab_page_editor editor2(fm);
-        tabs.append("main.cpp", editor1);
-        tabs.append("CMakeLists.txt", editor2);
-        plc["tab_frame"].fasten(editor1).fasten(editor2);
 
         fm.show();
 
