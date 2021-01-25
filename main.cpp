@@ -12,6 +12,8 @@
 #include <nana/filesystem/filesystem.hpp>
 #include <nana/filesystem/filesystem_ext.hpp>
 
+#include <toml.hpp>
+
 #include <iostream>
 #include <cstdio>
 #include <memory>
@@ -19,6 +21,7 @@
 #include <vector>
 #include <map>
 #include <functional>
+#include <optional>
 
 class tab_page_editor : public nana::panel<false>
 {
@@ -66,6 +69,14 @@ public:
                         lsbox.at(0).append({ s.filename(), relative != "." ? relative : ""});
                 }
         }
+
+        std::optional<std::filesystem::path> get_file(size_t index)
+        {
+                if (index > files.size()){
+                        return {};
+                }
+                return files.at(index);
+        }
 };
 
 #ifdef __linux__
@@ -95,32 +106,36 @@ int exec(const char* cmd, std::function<void(const char*)> on_line_read) {
 int main() {
         nana::threads::pool thread_pool;
         nana::form fm{};
-
         nana::place plc{fm};
-
+        nana::tabbar<std::string> tabs(fm);
         nana::listbox lsbox(fm);
+        nana::textbox lbl(fm);
+        nana::toolbar tb(fm);
+        nana::button buttonOpen{fm, "Open"};
+        nana::button buttonCompile{fm, "Compile"};
+        nana::button buttonRun{fm, "Run"};
+
+        toml::value config;
+        project_model project;
+
         lsbox.append_header("filename");
         lsbox.append_header("size");
+        lsbox.events().selected([&fm, &project, &tabs, &plc](const nana::arg_listbox &msg){
+                auto file = project.get_file(msg.item.pos().item);
+                if (file == std::nullopt) {
+                        return;
+                }
+                auto editor = std::make_shared<tab_page_editor >(fm);
+                tabs.append(file.value().filename(), *editor);
+                plc["tab_frame"].fasten(*editor);
+        });
 
-        tab_page_editor editor1(fm);
-        tab_page_editor editor2(fm);
-        nana::textbox lbl(fm);
         lbl.editable(false);
 
-        nana::tabbar<std::string> tabs(fm);
-        tabs.append("main.cpp", editor1);
-        tabs.append("CMakeLists.txt", editor2);
-
-        nana::toolbar tb(fm);
         tb.separate();
         tb.append("Open");
         tb.append("Compile");
         tb.append("run");
-
-        nana::button buttonOpen{fm, "Open"};
-        nana::button buttonCompile{fm, "Compile"};
-        nana::button buttonRun{fm, "Run"};
-        project_model project;
 
         buttonOpen.events().click(nana::threads::pool_push(thread_pool, [&lsbox, &project]{
                 // Seems like nana 1.7.4 does not support changing the folderbox title
@@ -130,6 +145,7 @@ int main() {
                 project.clear();
                 project.load_dir(path.front().string());
                 project.setup_listbox(lsbox);
+                // TODO: save last project from config
 
         }));
         buttonCompile.events().click(nana::threads::pool_push(thread_pool, [&lbl, &buttonCompile, &fm]{
@@ -152,11 +168,26 @@ int main() {
         plc["toolbar"] << buttonOpen << buttonCompile << buttonRun;
         plc["list"] << lsbox;
         plc["tabs"] << tabs;
-        plc["tab_frame"].fasten(editor1).fasten(editor2);
         plc["panel"] << lbl;
         plc.collocate();
 
+        try {
+                config = toml::parse("~/.naniderc");
+        } catch (const std::exception&) {
+
+        }
+
+        // TODO: hacks to see something on screen
+        // TODO: load last project from config
+        tab_page_editor editor1(fm);
+        tab_page_editor editor2(fm);
+        tabs.append("main.cpp", editor1);
+        tabs.append("CMakeLists.txt", editor2);
+        plc["tab_frame"].fasten(editor1).fasten(editor2);
+
         fm.show();
+
+        // TODO - we should ave geometry of window on config
         nana::API::zoom_window(fm, true);
         nana::exec();
         return 0;

@@ -4,6 +4,8 @@
 [requires]
 libpng/1.6.37
 libjpeg-turbo/2.0.6
+toml11/3.6.0
+#inih/52
 
 [generators]
 cmake
