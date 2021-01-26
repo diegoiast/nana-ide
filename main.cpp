@@ -135,7 +135,7 @@ int exec(const char* cmd, std::function<void(const char*)> on_line_read)
 
 #ifdef __WIN32__
 // https://stackoverflow.com/a/46348112/78712
-int exec(const char* cmd, std::function<void(const char*)> on_line_read) {
+int exec(const char* cmd, std::function<void(const char*)> on_line_read)
 {
         // TODO
 }
@@ -191,7 +191,7 @@ int main() {
                 project.setup_listbox(lsbox);
 
                 try {
-                        std::string s = path.front();
+                        std::string s = path.front().string();
                         toml::value v(s);
                         config["environment"]["loaded_dir"] = v;
 
