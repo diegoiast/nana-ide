@@ -191,9 +191,7 @@ int main() {
                 project.setup_listbox(lsbox);
 
                 try {
-                        std::string s = path.front().string();
-                        toml::value v(s);
-                        config["environment"]["loaded_dir"] = v;
+                        config["environment"]["loaded_dir"] = path.front().string();
 
                         std::ofstream config_file (nana_ide_config_file);
                         config_file << config;
