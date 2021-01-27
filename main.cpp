@@ -9,7 +9,7 @@
 #include <nana/gui/widgets/toolbar.hpp>
 #include <nana/gui/filebox.hpp>
 #include <nana/threads/pool.hpp>
-#include <nana/filesystem/filesystem.hpp>
+//#include <nana/filesystem/filesystem.hpp>
 #include <nana/filesystem/filesystem_ext.hpp>
 
 #define TOML11_COLORIZE_ERROR_MESSAGE
@@ -186,6 +186,9 @@ int main() {
                 nana::folderbox picker{nullptr, {}, "Choose project directory"};
                 picker.title("Choose project directory");
                 auto path = picker.show();
+                if (path.empty()) {
+                        return;
+                }
                 project.clear();
                 project.load_dir(path.front().string());
                 project.setup_listbox(lsbox);
