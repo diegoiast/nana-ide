@@ -19,11 +19,12 @@ add_compile_definitions(NANA_ENABLE_PNG NANA_ENABLE_JPEG)
 if (UNIX)
     add_compile_definitions(USE_LIBJPEG_FROM_OS  USE_LIBPNG_FROM_OS)
 endif (UNIX)
+
 FetchContent_Declare(
   nana
   GIT_REPOSITORY https://github.com/cnjinhao/nana
-  GIT_TAG        v1.7.4
-)
+  GIT_TAG     develop-1.8 )
+#    GIT_TAG        v1.7.4 )
 FetchContent_MakeAvailable(nana)
 ################################################################################
 

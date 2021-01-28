@@ -151,8 +151,8 @@ int main() {
         nana::tabbar<std::string> tabs(fm);
         nana::listbox lsbox(fm);
         nana::textbox lbl(fm);
-        nana::toolbar tb(fm);
-        nana::button buttonOpen{fm, "Open"};
+        nana::button buttonOpenFile{fm, "File"};
+        nana::button buttonOpenProject{fm, "Project"};
         nana::button buttonCompile{fm, "Compile"};
         nana::button buttonRun{fm, "Run"};
 
@@ -169,19 +169,20 @@ int main() {
                 if (file == std::nullopt) {
                         return;
                 }
-                auto editor = std::make_shared<tab_page_editor >(fm);
-                tabs.append(file.value().filename(), *editor);
-                plc["tab_frame"].fasten(*editor);
+                tab_page_editor editor = new tab_page_editor(fm);
+                plc["tab_frame"].fasten(editor);
+                tabs.append(file.value().filename(), editor);
         });
 
         lbl.editable(false);
 
-        tb.separate();
-        tb.append("Open");
-        tb.append("Compile");
-        tb.append("run");
+        buttonOpenFile.events().click([&fm]{
+                nana::msgbox mb(fm, "Open file");
+                mb.icon(nana::msgbox::icon_information) << "unimplemented yet";
+                mb.show();
+        });
 
-        buttonOpen.events().click(nana::threads::pool_push(thread_pool, [&lsbox, &project, &config]{
+        buttonOpenProject.events().click(nana::threads::pool_push(thread_pool, [&lsbox, &project, &config]{
                 // Seems like nana 1.7.4 does not support changing the folderbox title
                 nana::folderbox picker{nullptr, {}, "Choose project directory"};
                 picker.title("Choose project directory");
@@ -203,6 +204,7 @@ int main() {
                         std::cerr << e.what() << std::endl;
                 }
         }));
+
         buttonCompile.events().click(nana::threads::pool_push(thread_pool, [&lbl, &buttonCompile, &fm]{
                 buttonCompile.enabled(false);
                 buttonCompile.caption("Compiling...");
@@ -213,14 +215,36 @@ int main() {
                 buttonCompile.caption("Compile");
                 buttonCompile.enabled(true);
         }));
-        buttonRun.events().click([](){
+
+        buttonRun.events().click([&fm](){
+                nana::msgbox mb(fm, "Run");
+                mb.icon(nana::msgbox::icon_information) << "unimplemented yet";
+                mb.show();
         });
 
-        plc.div("vertical "
-                        "<toolbar weight=32 gap=5 arrange=[100,repeated]>"
-                        "<<list weight=20%>|<vert <tabs weight=32><tab_frame>|<panel weight=20%>>>"
-                "");
-        plc["toolbar"] << buttonOpen << buttonCompile << buttonRun;
+        // WIP http://nanapro.org/en-us/forum/index.php?u=/topic/1349/gghelp-with-layout-design
+        plc.div("vert"
+                "<toolbar weight=30 arrange=[100,variable,100]"
+//                        "<left_side  weight=80 gap=5 arrange=[100,repeated]>"
+//                        "<spacer min=200>"
+//                        "<right_side weight=80 gap=5 arrange=[100,repeated]>"
+                "<first weight=80> <weight=15> <second weight=80> <min=15> <third weight=80> <weight=15> <last weight=80>"
+                ">"
+                "<main_window"
+                        "<list weight=20%>|<vert <tabs weight=32><tab_frame>|<panel weight=20%>"
+                ">"
+        );
+
+        plc["first"] << buttonOpenFile;
+        plc["second"] << buttonOpenProject;
+        plc["third"] << buttonRun;
+        plc["last"] << buttonCompile;
+
+//        plc["left_side"] << buttonOpenFile;
+//        plc["left_side"] << buttonOpenProject;
+//        plc["right_side"] << buttonRun;
+//        plc["right_side"] << buttonCompile;
+
         plc["list"] << lsbox;
         plc["tabs"] << tabs;
         plc["panel"] << lbl;

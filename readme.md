@@ -36,7 +36,8 @@ Which means that the user of the IDE will need to edit `CMakeLists.txt` - and
 
 1. Layout/GUI
     1. I need to be able to put buttons on the right on the toolbar. I am no
-       using a regular toolbar.
+       using a regular toolbar. 
+       http://nanapro.org/en-us/forum/index.php?u=/topic/1349/gghelp-with-layout-design
     2. When adding an editor from the list box click handler, the tabs are
        displayed but no editor is available. It goes out of scope and dies?
     3. On startup - I zoom the window after its shown. How to do this before?
@@ -47,6 +48,7 @@ Which means that the user of the IDE will need to edit `CMakeLists.txt` - and
        visible.
 2. IDE's build system
     1. Nana needs to be built as a shared object/DLL. This fails on build.
+       https://github.com/cnjinhao/nana/issues/601
     2. On Windows - I am unable to build png and jpeg libraries. Again - all
        these need to be shared.
     3. Need to investigate how to use clang on Windows.
