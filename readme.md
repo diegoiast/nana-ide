@@ -36,7 +36,7 @@ Which means that the user of the IDE will need to edit `CMakeLists.txt` - and
 
 1. Layout/GUI
     1. I need to be able to put buttons on the right on the toolbar. I am no
-       using a regular toolbar. 
+       using a regular toolbar. (DONE, reach the basic limit of Nana)
        http://nanapro.org/en-us/forum/index.php?u=/topic/1349/gghelp-with-layout-design
     2. When adding an editor from the list box click handler, the tabs are
        displayed but no editor is available. It goes out of scope and dies?

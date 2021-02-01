@@ -169,9 +169,9 @@ int main() {
                 if (file == std::nullopt) {
                         return;
                 }
-                tab_page_editor editor = new tab_page_editor(fm);
-                plc["tab_frame"].fasten(editor);
-                tabs.append(file.value().filename(), editor);
+                auto editor = std::make_shared<tab_page_editor >(fm);
+                tabs.append(file.value().filename(), *editor);
+                plc["tab_frame"].fasten(*editor);
         });
 
         lbl.editable(false);
@@ -222,28 +222,20 @@ int main() {
                 mb.show();
         });
 
-        // WIP http://nanapro.org/en-us/forum/index.php?u=/topic/1349/gghelp-with-layout-design
         plc.div("vert"
-                "<toolbar weight=30 arrange=[100,variable,100]"
-//                        "<left_side  weight=80 gap=5 arrange=[100,repeated]>"
-//                        "<spacer min=200>"
-//                        "<right_side weight=80 gap=5 arrange=[100,repeated]>"
-                "<first weight=80> <weight=15> <second weight=80> <min=15> <third weight=80> <weight=15> <last weight=80>"
+                "<toolbar weight=30"
+                        "<left_side min=205 gap=5 arrange=[100,repeated]>"
+                        "<spacer min=80>"
+                        "<right_side weight=205 gap=5 arrange=[100,repeated]>"
                 ">"
                 "<main_window"
                         "<list weight=20%>|<vert <tabs weight=32><tab_frame>|<panel weight=20%>"
                 ">"
         );
-
-        plc["first"] << buttonOpenFile;
-        plc["second"] << buttonOpenProject;
-        plc["third"] << buttonRun;
-        plc["last"] << buttonCompile;
-
-//        plc["left_side"] << buttonOpenFile;
-//        plc["left_side"] << buttonOpenProject;
-//        plc["right_side"] << buttonRun;
-//        plc["right_side"] << buttonCompile;
+        plc["left_side"] << buttonOpenFile;
+        plc["left_side"] << buttonOpenProject;
+        plc["right_side"] << buttonRun;
+        plc["right_side"] << buttonCompile;
 
         plc["list"] << lsbox;
         plc["tabs"] << tabs;
