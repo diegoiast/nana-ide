@@ -24,12 +24,11 @@
 #include <functional>
 #include <optional>
 
-class tab_page_editor : public nana::panel<false>
+struct tab_page_editor : public nana::panel<false>
 {
         nana::place my_place{*this};
         nana::textbox editor{*this};
 
-public:
         tab_page_editor(nana::window wd): nana::panel<false>(wd)
         {
                 my_place.div("<editor>");
@@ -164,14 +163,26 @@ int main() {
 
         lsbox.append_header("filename");
         lsbox.append_header("size");
-        lsbox.events().selected([&fm, &project, &tabs, &plc](const nana::arg_listbox &msg){
-                auto file = project.get_file(msg.item.pos().item);
+
+        std::vector<std::shared_ptr<tab_page_editor>> pages;
+        lsbox.events().selected([&fm, &project, &tabs, &plc, &pages](const nana::arg_listbox &msg){
+                if (!msg.item.selected()) {
+                        return;
+                }
+                std::optional<std::filesystem::path> file = project.get_file(msg.item.pos().item);
                 if (file == std::nullopt) {
                         return;
                 }
-                auto editor = std::make_shared<tab_page_editor >(fm);
-                tabs.append(file.value().filename(), *editor);
-                plc["tab_frame"].fasten(*editor);
+                pages.push_back(std::make_shared<tab_page_editor>(fm));
+                tab_page_editor &editor {*pages.back()};
+                tabs.append(file.value().filename(), editor);
+                plc["tab_frame"].fasten(editor);
+                editor.editor.focus();
+                plc.collocate();
+        });
+
+        tabs.events().removed([&pages](const nana::arg_tabbar_removed<std::string> &arg) {
+                pages.erase(pages.begin() + arg.item_pos);
         });
 
         lbl.editable(false);

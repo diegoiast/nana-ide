@@ -15,7 +15,7 @@ C++ did not even have STL - and much of its ideas are around it.
 
 I started writing a GUI for an IDE (how original) kept going. How long can I go?
 
-## Toolchain
+## Toolchain supported by the IDE
 The build system tested mainly is GCC, just because its available. I also test
 using Clang on Linux. I also aim to use ccache by default, even on windows,
 to speed up compilation. So - the IDE will:
@@ -39,7 +39,8 @@ Which means that the user of the IDE will need to edit `CMakeLists.txt` - and
        using a regular toolbar. (DONE, reach the basic limit of Nana)
        http://nanapro.org/en-us/forum/index.php?u=/topic/1349/gghelp-with-layout-design
     2. When adding an editor from the list box click handler, the tabs are
-       displayed but no editor is available. It goes out of scope and dies?
+       displayed but no editor is available. It goes out of scope and dies? (FIXED)
+       http://nanapro.org/en-us/forum/index.php?u=/topic/1352/ggadding-a-new-page-to-tabbar-from-a-click-handler
     3. On startup - I zoom the window after its shown. How to do this before?
        How to save/restore geometry?
     4. We need a good editor.  I am unsure if Nana has something usable
