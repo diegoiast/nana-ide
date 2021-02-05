@@ -24,6 +24,18 @@
 #include <functional>
 #include <optional>
 
+#include <string_view>
+
+static bool endsWith(std::string_view str, std::string_view suffix)
+{
+    return str.size() >= suffix.size() && 0 == str.compare(str.size()-suffix.size(), suffix.size(), suffix);
+}
+
+static bool startsWith(std::string_view str, std::string_view prefix)
+{
+    return str.size() >= prefix.size() && 0 == str.compare(0, prefix.size(), prefix);
+}
+
 struct tab_page_editor : public nana::panel<false>
 {
         nana::place my_place{*this};
@@ -33,12 +45,35 @@ struct tab_page_editor : public nana::panel<false>
         {
                 my_place.div("<editor>");
                 my_place["editor"]<< editor;
-
-                editor.set_highlight("C++ keywords", nana::colors::blue, nana::colors::white);
-                editor.set_keywords("C++ keywords", false, true, { "for", "while", "break", "if", "else"});
-                editor.set_highlight("C++ types", nana::colors::burly_wood, nana::colors::white);
-                editor.set_keywords("C++ types", false, true, { "int", "void", "NULL"});
                 editor.borderless(true);
+        }
+
+        void load_file(const std::filesystem::path &file_path)
+        {
+                if (file_path.is_directory()) {
+                        return;
+                }
+                if (endsWith(file_name, "cpp") || endsWith(file_name, "c")) {
+                        editor.set_highlight("C++ keywords", nana::colors::blue, nana::colors::white);
+                        editor.set_keywords("C++ keywords", false, true, {"structs",  "class", "return", "void", "for", "while", "break", "if", "else"});
+                        editor.set_highlight("C++ types", nana::colors::burly_wood, nana::colors::white);
+                        editor.set_keywords("C++ types", false, true, { "int", "float", "char", "NULL"});
+                }
+#if 1
+                editor.load(file_path.value());
+#else
+                std::ifstream myfile(file_path.value());
+                if (myfile.is_open()) {
+                        std::string line;
+                        while (std::getline(myfile,line)) {
+                                editor.append(line, false);
+                        }
+                        myfile.close();
+                }
+                editor.edited_reset();
+//               ???
+//                editor._m_saved()
+#endif
         }
 };
 
@@ -176,6 +211,7 @@ int main() {
                 pages.push_back(std::make_shared<tab_page_editor>(fm));
                 tab_page_editor &editor {*pages.back()};
                 tabs.append(file.value().filename(), editor);
+                editor.load_file(file);
                 plc["tab_frame"].fasten(editor);
                 editor.editor.focus();
                 plc.collocate();
