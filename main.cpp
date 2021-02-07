@@ -50,9 +50,7 @@ struct tab_page_editor : public nana::panel<false>
 
         void load_file(const std::filesystem::path &file_path)
         {
-                if (file_path.is_directory()) {
-                        return;
-                }
+                const std::string &file_name = file_path.filename();
                 if (endsWith(file_name, "cpp") || endsWith(file_name, "c")) {
                         editor.set_highlight("C++ keywords", nana::colors::blue, nana::colors::white);
                         editor.set_keywords("C++ keywords", false, true, {"structs",  "class", "return", "void", "for", "while", "break", "if", "else"});
@@ -60,7 +58,7 @@ struct tab_page_editor : public nana::panel<false>
                         editor.set_keywords("C++ types", false, true, { "int", "float", "char", "NULL"});
                 }
 #if 1
-                editor.load(file_path.value());
+                editor.load(file_path);
 #else
                 std::ifstream myfile(file_path.value());
                 if (myfile.is_open()) {
@@ -208,10 +206,14 @@ int main() {
                 if (file == std::nullopt) {
                         return;
                 }
+                if (!std::filesystem::is_regular_file(file.value())) {
+                        return;
+                }
+
                 pages.push_back(std::make_shared<tab_page_editor>(fm));
                 tab_page_editor &editor {*pages.back()};
                 tabs.append(file.value().filename(), editor);
-                editor.load_file(file);
+                editor.load_file(file.value());
                 plc["tab_frame"].fasten(editor);
                 editor.editor.focus();
                 plc.collocate();
