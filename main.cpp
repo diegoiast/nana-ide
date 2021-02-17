@@ -40,6 +40,7 @@ struct tab_page_editor : public nana::panel<false>
 {
         nana::place my_place{*this};
         nana::textbox editor{*this};
+        std::string file_name;
 
         tab_page_editor(nana::window wd): nana::panel<false>(wd)
         {
@@ -50,7 +51,7 @@ struct tab_page_editor : public nana::panel<false>
 
         void load_file(const std::filesystem::path &file_path)
         {
-                const std::string &file_name = file_path.filename();
+                file_name = file_path.filename();
                 if (endsWith(file_name, "cpp") || endsWith(file_name, "c")) {
                         editor.set_highlight("C++ keywords", nana::colors::blue, nana::colors::white);
                         editor.set_keywords("C++ keywords", false, true, {"structs",  "class", "return", "void", "for", "while", "break", "if", "else"});
@@ -209,6 +210,16 @@ int main() {
                 if (!std::filesystem::is_regular_file(file.value())) {
                         return;
                 }
+
+                for(int i=0; i< tabs.length(); i++) {
+                        std::string s1 = file.value().filename();
+                        std::string s2 = pages.at(i).get()->file_name;
+                        if (s1 == s2) {
+                                tabs.activated(i);
+                                return;
+                        }
+                }
+
 
                 pages.push_back(std::make_shared<tab_page_editor>(fm));
                 tab_page_editor &editor {*pages.back()};
