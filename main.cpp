@@ -192,14 +192,33 @@ int main() {
         // https://www.reddit.com/r/cpp/comments/f70io2/toml_a_toml_parser_and_serializer_for_c17/
         toml::value config;
         project_model project;
+        std::vector<std::shared_ptr<tab_page_editor>> pages;
+
+        auto display_file = [&fm, &pages, &tabs, &plc](const std::filesystem::path &file) {
+                for(int i=0; i< tabs.length(); i++) {
+                        std::string s1 = file.filename();
+                        std::string s2 = pages.at(i).get()->file_name;
+                        if (s1 == s2) {
+                                tabs.activated(i);
+                                return;
+                        }
+                }
+
+                pages.push_back(std::make_shared<tab_page_editor>(fm));
+                tab_page_editor &editor {*pages.back()};
+                tabs.append(file.filename(), editor);
+                editor.load_file(file);
+                plc["tab_frame"].fasten(editor);
+                editor.editor.focus();
+                plc.collocate();
+        };
 
         nana_ide_config_file = std::filesystem::config_file(nana_ide_config_file_name);
 
         lsbox.append_header("filename");
         lsbox.append_header("size");
 
-        std::vector<std::shared_ptr<tab_page_editor>> pages;
-        lsbox.events().selected([&fm, &project, &tabs, &plc, &pages](const nana::arg_listbox &msg){
+        lsbox.events().selected([&display_file, &project](const nana::arg_listbox &msg){
                 if (!msg.item.selected()) {
                         return;
                 }
@@ -211,23 +230,7 @@ int main() {
                         return;
                 }
 
-                for(int i=0; i< tabs.length(); i++) {
-                        std::string s1 = file.value().filename();
-                        std::string s2 = pages.at(i).get()->file_name;
-                        if (s1 == s2) {
-                                tabs.activated(i);
-                                return;
-                        }
-                }
-
-
-                pages.push_back(std::make_shared<tab_page_editor>(fm));
-                tab_page_editor &editor {*pages.back()};
-                tabs.append(file.value().filename(), editor);
-                editor.load_file(file.value());
-                plc["tab_frame"].fasten(editor);
-                editor.editor.focus();
-                plc.collocate();
+                display_file(file.value());
         });
 
         tabs.events().removed([&pages](const nana::arg_tabbar_removed<std::string> &arg) {
@@ -236,10 +239,20 @@ int main() {
 
         lbl.editable(false);
 
-        buttonOpenFile.events().click([&fm]{
-                nana::msgbox mb(fm, "Open file");
-                mb.icon(nana::msgbox::icon_information) << "unimplemented yet";
-                mb.show();
+        buttonOpenFile.events().click([&fm, &display_file]{
+                nana::filebox fb(fm, true);
+                fb.add_filter("C++ files", "*.c;*.cxx;*.cpp;*.h;*.hpp");
+                fb.add_filter("Build system files", "Makefile*;CMakeLists.txt;conanfile.txt");
+                fb.add_filter("Text files", "*.txt;*.md");
+                fb.add_filter("All Files", "*.*");
+                fb.allow_multi_select(true);
+
+                auto files = fb.show();
+                if (!files.empty()) {
+                        for (auto f: files) {
+                                display_file(f);
+                        }
+                }
         });
 
         buttonOpenProject.events().click(nana::threads::pool_push(thread_pool, [&lsbox, &project, &config]{
